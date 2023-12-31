@@ -1,3 +1,13 @@
+############################### Table of Contents ###################################
+1) Docker
+2) Terraform, infrastructures
+3) ssh
+4) github
+5) CI / CD, github actions
+6) Assignment 2
+7) Assignment 3
+
+
 ############################### DOCKER ###################################
 
 #installing docker
@@ -32,6 +42,16 @@
 
 Docker-Ports:
 -> docker run -p 80:5000 image_name_or_id 		// meaning attach port 80 if the host machine to port 5000 inside of the image
+
+# Docker-database or mariadb usage
+-> sudo docker stop mariadb_container 		//stops a container
+-> sudo docker start mariadb_container		//start a container
+-> sudo docker run -d --name mariadb_container -e MYSQL_ROOT_PASSWORD=test mariadb:latest	//create and executes a contianer in detach mode with a environment variabble and image "mariadb" which is already build
+-> sudo docker exec -it mariadb_container /bin/bash	//executing commands inside the container in interactive mode
+-> mariadb -u root -p					//inside of container, run these commands to control the mariadb database
+-> show databases;					//run these commands inside the mariadb databases
+
+
 
 Docker-Volumes: (they are folders where containers can store and share data, because when a container stops, it loses all its data)
 -> docker volume create /path/volume_name			//creates a volume
@@ -154,6 +174,9 @@ syntax website: https://developer.hashicorp.com/terraform/language/syntax
 
    #installing terraform
 -> sudo snap install terraform
+   #or use the bellow website
+-> https://developer.hashicorp.com/terraform/tutorials/aws-get-started/install-cli
+
 
    #installing aws_cli on ubuntu
 -> curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
@@ -161,7 +184,7 @@ syntax website: https://developer.hashicorp.com/terraform/language/syntax
 -> sudo ./aws/install
 
 #configuiring aws on ubuntu
--> aws configure
+-> aws configure		//after this, it will ask for access key and secret key, create them in aws "iam" section, and download the keys
 
 # init -> validate -> format -> plan -> apply -> destroy 
 
