@@ -1,0 +1,153 @@
+backup.sh          0000764 0001750 0001750 00000000754 14517454265 012333  0  ustar   ubuntu   ubuntu
+#! /usr/bin/bash
+
+sudo tar -czvf /home/devopsuser/devopsdir_tart_$(date '+%Y%m%d%H%M%S').gz /devopsdir/
+
+# Setting cronjob
+# */10 * * * * root /path/to/your/script/file
+# You can simply copy and paste the command as well at the place of path
+# As you only have one command in your bash script which but without sudo
+# because we are already setting up this cron under the scope of root user
+# */20 * * * * root tar -czvf /home/devopsuser/devopsdir_tart_$(date '+%Y%m%d%H%M%S').gz /devopsdir/filedir.sh                                                                                          
+0000764 0001750 0001750 00000000572 14517447571 012504  0   ustar   ubuntu                          ubuntu   
+#! /usr/bin/bash
+
+dir=/devopsdir
+echo -e "Creating directory: $dir ... \n"
+sudo mkdir -p $dir
+
+echo -e "Creating devopsfilet.txt file ... \n"
+
+sudo chown -R $USER:$USER $dir
+echo "AoA, hello devops!" > $dir/devopsfile.txt
+
+echo "setting permmisions as requested"
+sudo chown -R devopsuser:devopsuser $dir
+sudo chmod 644 $dir/devopsfile.txt
+sudo chmod 744 $dir
+
+echo -e "\nDone."
+sshconfig.sh                                                                                        
+0000764 0001750 0001750 00000003021 14517443375 013037  0 ustar   ubuntu                          ubuntu                                                                                                                                                                                                                 
+#! /usr/bin/bash
+
+
+#Generating keypairs
+keypairname="devopsuser_keypair"
+ssh-keygen -N "" -f $keypairname
+
+echo "Moving keypairs to the user home directory..."
+sudo cp $keypairname /home/devopsuser/ 
+
+echo "Moving public key to the .ssh folder of the user home directory..."
+sudo mkdir -p /home/devopsuser/.ssh
+sudo mv $keypairname.pub /home/devopsuser/.ssh/authorized_keys
+
+echo -e "\nSuccessfully moved key pairs to user home directory, see details\n"
+sudo ls -l /home/devopsuser/ /home/devopsuser/.ssh/
+
+
+# Disabling password authentication
+echo -e "Disabling password authentication...\n"
+sudo grep -q "^[^#]*PasswordAuthentication" /etc/ssh/sshd_config && sudo sed -i "/^[^#]*PasswordAuthentication[[:space:]]yes/c\PasswordAuthentication no" /etc/ssh/sshd_config || sudo echo "PasswordAuthentication no" >> /etc/ssh/sshd_config
+
+#sudo service ssh restart
+
+echo "Password authentication disabed, now you can only login to this system using key pairs only ..."
+
+
+# Setting up ssh detail in config
+echo -e "Following ssh details are set in config.."
+
+cat << SHOW 
+Hoset server
+        Hostname 127.0.0.1
+        IdentityFile $(pwd)/$keypairname
+        port 25
+        user devopsuser
+SHOW
+
+cat << SSH >> /home/$USER/.ssh/config
+Host server
+	Hostname 127.0.0.1
+	IdentityFile $(pwd)/$keypairname
+	port 25
+	user devopsuser
+SSH
+
+# SSH into server using newly created credentials
+echo "Making SSH connectiong to the server via new user"
+
+ssh server << COMMANDS
+	mkdir test
+	echo "I am doing the taske" >> test/filecreatedinnoninteractivemode.txt
+COMMANDS
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               
+systeminfo.sh  
+
+0000764 0001750 0001750 00000000604 14517425370 013253  0 ustar   ubuntu                          ubuntu
+#! /usr/bin/bash
+
+#Displaying the system info
+
+echo -e "Displaying the system info ...\n"
+
+echo "Kernel name is: $(uname -s)"
+
+echo "Kernel release is: $(uname -r)"
+
+echo "Processor type of the machine is: $(uname -p)"
+
+echo "Installed operating system is: $(uname -s)"
+
+#Showing the details of my favorite editor
+echo -e "\nShowing the details of my favorite editor ...\n"
+
+whereis nano
+transfer.sh                                                                                         
+0000764 0001750 0001750 00000000241 14517455603 012676  0 ustar   ubuntu                          ubuntu                                                                                                                                                                                                                 
+#! /usr/bin/bash
+
+# Creating tarball
+filename=u2020123.tar.gz
+tar -czvf $filename *.sh
+
+# copying files to the server
+scp $filename u2020123@127.0.0.1:$filename                                                                                                                                                                                                                                                                                                                                                               
+usergroup.sh                                                                                        
+
+0000764 0001750 0001750 00000001520 14517432236 013103  0 ustar   ubuntu                          ubuntu                                                                                                                                                                                                                 
+#! /usr/bin/bash
+
+# Creating a user
+username="devopsuser"
+echo -e "Creating user named: {$username} with password: {$username}..."
+
+pass=$(perl -e 'print crypt($ARGV[0], "password")' $username)
+useradd -m -p "$pass" "$username"
+
+# Alternate script to create a user
+<<-COMMENT
+useradd -m $username
+echo "$username:$username" | chpasswd
+COMMENT
+
+echo -e "User {$username} with pass: {$username} created successfully...\n"
+
+
+# Creating group
+group="devopsgroup"
+echo -e "Creating group named: {$group}\n"
+groupadd $group
+echo -e "Group {$group} successfully created\n"
+
+# Adding user to the group
+echo -e "Adding {$username} to group: {$group}...\n"
+usermod -a -G $group $username
+
+
+# Showing the association of user with the newly created group
+echo -e "{$username} successfully added to the group. See details below\n"
+cat /etc/group | grep $group
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                

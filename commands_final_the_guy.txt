@@ -1,0 +1,936 @@
+############################### DOCKER ###################################
+
+#installing docker
+-> sudo snap install docker
+
+# you cannot create a docker image withoud the Dockerfile, see below for further instructions
+
+# frequent commands
+-> docker build -t image_name:latest .				//creating a image from dockerfile
+-> dicker run -p 80:3000 -d --name container_name image_name    //create a container named "container_name" with an image build with the above command named "image_name", both have to be same.
+
+#Basic commands
+-> docker build -t image_name .				// creates a docker image of the current folder with image_name
+-> docker build -t image_name:latest .			// updates a docker image if it already exist else creats a new one
+-> docker ps 						// lists running containers
+-> docker ps -a 					//lists all containers
+-> docker rm container_name_or_id 			//removes a container
+-> docker images 					//lists images
+-> docker pull image_name 				//downloads an imaged from docker hub which is publically available
+-> docker rmi image_name_or_image_id 			//remove images
+-> docker run image_name 				//creates a container with random name and executes the specified image in it
+-> docker run --name container_name image_name		//speficy the name of the container instead if being random
+-> docker run -it image_name 				//run docker container in interactive mode
+-> docker stop container_name_or_id 			//stops a container
+-> docker exec -it container_name command_tobe_executed 	//executes a command inside a running container
+   example: sudo docker exec -it frontend ls -al
+-> docker inspect container_name_or_id 			//inspects a container
+-> docker logs container_name_or_id 			//generates logs of a container
+-> docker attach container_name 			//attach the container with the terminal command line, to view the container outputs
+-> docker run -d image_name      			//run a contaner in detach mode, meaning run it in the background of the terminal
+-> docker run -d --name container_name image_name	//run a contaner in detach mode, meaning run it in the background of the terminal
+
+Docker-Ports:
+-> docker run -p 80:5000 image_name_or_id 		// meaning attach port 80 if the host machine to port 5000 inside of the image
+
+Docker-Volumes: (they are folders where containers can store and share data, because when a container stops, it loses all its data)
+-> docker volume create /path/volume_name			//creates a volume
+-> docker run -v host_path:container_path image_name_or_id 	//creates a new volume/storage_drive and mount it inside the image
+   example: docker run -v /opt/datadir/:/var/lib/mysql mysql
+   Volumes: are stored in the host machine, and part of the host filesystem and saved in a specific location "/var/lib/docker/volums" but can only be modified by the docker.
+   Bind mounts: stored on host machine and only modifable by docker containers and can be stored anywhere in the host machine
+   tmpfs mounts: stored in hosts system memomry only and are never writen to the hosts filesytem
+
+Docker-Env-variables:
+example: docker run -d --name any_name_forthe_container --env MARIADB_PASSWORD=THE_GUY --env any_variable=any_value image_name_or_id
+-> docker inspect container_name 				//it inspects or outputs environment variables
+
+Dockerfile:
+"Dockerfile" is a blueprint for building an image, it outline steps to build an image
+images are readonly, non-mutable files and are templates for containers
+a contaienr is a running image
+
+dockerfile keywords:
+-> FROM 	//define base image
+-> RUN  	//execute commands, just like in terminals
+-> ENV  	//set env variables
+-> ADD  	//add remaing files and directories for building images
+-> COPY 	//copy entire directories or files for building images
+-> ENTRYPOINT   //program name to execute, like cat,ls,ps,python etc
+-> CMD  	//argument of the above program to execute, can only be defined once in a docker file
+
+Example-dockerfile:
+
+FROM ubuntu:latest					//ubuntu is an image name, available on docker hub it can be anyting.
+MAINTAINER THE GUY
+LABEL description="apche server container on ubuntu"
+WORKDIR ./app						//defining the working directory
+COPY ./source_path /detination_path_inside_container
+RUN apt -y update
+RUN apt -y install apache2
+ENV PORT=8080						//creating a environment variable "PORT" with value "80"
+EXPOSE 8080						//exposing port 80 inside the machine so it cann be accessed on the host machine by any port
+ENTRYPOINT ["apache2ctl"]				//basicaly the name of the program to run, it can be "ls", "cat", or anything
+CMD ["-D", "FORGROUND"]					//arguments to the above program
+
+-> docker build -t any_name_of_image:latest . 		// the "dot" is the path to docker file, its usual current directory so we use dot
+-> docker run -p 80:8080 --name anycontainer name image_name	//80 is host or outside port, 8080 is image_inside port, give a new container name, with already build image name in previos command 
+
+
+
+docker-compose.yml: used for running multiple containers
+example file:
+
+version: '3'
+services:
+  web:			//set a container name
+    build: .		//path to directory where dockerfile is stored, usually dot for current direcotry
+    ports:
+      - 80:8080		//outside_port:inside_image_port
+  db:			//2nd container name
+    image: 'mysql'	//already build image name
+    environment:	//used for defining environment variables
+      DB_PASSWORD: THE_GUY_IT_IS		//key:value
+    volumes:
+      - /host_path/db-data:/container_path/foo	//mounts the db-data volume inside the container
+
+volumes:
+  db-data:		//creates a db-data volume if it does not exists already
+
+# Assignment-3-dockerfile
+FROM ubuntu:latest
+
+RUN apt-get update -y
+RUN apt-get install -y ca-certificates curl gnupg
+RUN mkdir -p /etc/apt/keyrings
+RUN mkdir -p /etc/apt/keyrings
+RUN curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
+RUN echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_16.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list
+RUN apt-get update -y 
+RUN apt-get install nodejs -y
+
+RUN mkdir ./web
+
+COPY ./App ./web
+
+WORKDIR ./web
+
+RUN npm install
+
+EXPOSE 3000
+
+ENTRYPOINT ["npm"]
+
+CMD ["run", "start"]
+
+-> sudo docker build -t web_image:latest .
+
+#assignment-3-docker-compose.yml file:
+version: '3'
+services:
+  frontend:
+    container_name: frontend
+    image: web_image
+    ports:
+      - "8080:3000"
+    volumes:
+      - ./App:/web
+
+  backend:
+    container_name: backend
+    image: mariadb
+    environment:
+      - MARIADB_ROOT_PASSWORD=my-secret-pw
+    ports:
+      - "80:3000"
+
+-> sudo docker-compose up -d
+
+
+
+############################### TERRAFORM / INFRASTRUCTURE ###################################
+
+syntax website: https://developer.hashicorp.com/terraform/language/syntax
+
+   #installing terraform
+-> sudo snap install terraform
+
+   #installing aws_cli on ubuntu
+-> curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+-> unzip awscliv2.zip
+-> sudo ./aws/install
+
+#configuiring aws on ubuntu
+-> aws configure
+
+# init -> validate -> format -> plan -> apply -> destroy 
+
+# write code in a .tf format file
+-> terraform init	//initializes the folder for terraform
+-> terraform fmt	//formats the terraform file
+-> terraform plan	//plans the infrastructure
+-> terraform apply	//apllys the infrastructure on aws or any cloud service
+
+# Block Types
+1) terraform	//It is used to define global configuration and behavior for terraform execution
+2) resource	// main objects of infrastructure likw, ec2 instance, vpc etc
+3) provide	//The provider block is used to configure and define the provider for a specific cloud or infrastructure program
+3) data		//This block is used to fetch data from external sources or existing resources. 
+4) variable 	//Declaring input variables that can be provided during Terraform cli execution for flexible configurations.
+5) output 	//Defining values that are displayed as output after executing terraform apply or terraform output commands.
+6) provisoner 	//Provisioners allow us to specify actions to be performed on local or remote machines to prepare resources for service. Provisioners allow us to perform tasks such as installing the desired software, or scripts
+   example:
+  	resource "aws_instance" "web_server" {
+   		 provisioner "local-exec" {
+    			command = "Get-Date > completed.txt"
+    			interpreter = ["PowerShell", "-Command"]
+  		 }
+  		provisioner "remote-exec" {
+    			inline = [
+      				"chmod +x /tmp/script.sh",
+      				"/tmp/script.sh args",
+    				]
+		}
+	}
+
+
+
+#resource_format
+block_type "label_predefined_by_terraform" "any_alias_or_name_by_you" {
+	key=values
+	key2=value2
+	tags = {
+		ke3=value3
+	}
+}
+
+#example_block
+resource "aws_instance" "ec2_instance_web" {
+  ami                    = data.aws_ami.latest_ubuntu.id
+  instance_type          = "t2.micro"
+  key_name               = aws_key_pair.ec2_key_pair.key_name
+  subnet_id              = "subnet-0bb91ffaf3f387a1f"
+  associate_public_ip_address = true
+}
+
+
+#example file(main.tf):
+#creating an ec2 instance on aws with a private key and outputs
+
+terraform { //important, must add, use as is
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 3.5.0"
+    }
+  }
+}
+
+provider "aws" { //important, must add, use as is
+  region = "us-west-2" //select any region
+}
+
+data "aws_ami" "latest_ubuntu" { //creating a ubuntu instance
+  most_recent = true
+  owners      = ["099720109477"] //as it is, dont change it
+
+  filter {
+    name   = "name"
+    values = ["ubuntu/images/hvm-ssd/ubuntu-focal-20.04-amd64-server-*"]
+  }
+
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
+}
+
+resource "aws_key_pair" "ec2_key_pair" {
+  key_name   = "cs423-assignment4-key"
+  public_key = file("../cs423-assignment4-key.pub")
+}
+
+resource "aws_instance" "ec2_instance_web" {
+  ami                    = data.aws_ami.latest_ubuntu.id
+  instance_type         = "t2.micro"
+  key_name              = aws_key_pair.ec2_key_pair.key_name
+  subnet_id             = "subnet-0bb91ffaf3f387a1f"
+  associate_public_ip_address = true
+
+  user_data = <<-EOF
+              #!/bin/bash
+              sudo apt update
+              sudo apt install -y apache2
+              sudo systemctl start apache2
+              sudo systemctl enable apache2
+              EOF
+
+  tags = {
+    Name = "Assignment4-EC2-Web"
+  }
+}
+
+output "private_key" {
+  value       = aws_key_pair.ec2_key_pair.key_name
+  description = "Private key for the created key pair"
+}
+
+output "web_instance_ips" { //display output on the terminal from cloud
+  value = {
+    public_ip  = aws_instance.ec2_instance_web.public_ip
+    private_ip = aws_instance.ec2_instance_web.private_ip
+  }
+}
+
+
+############################### SSH ###################################
+-> sudo systemctl enable ssh	//enables ssh service
+-> sudo systemctl start  ssh	//start ssh service
+-> sudo ssh-keygen -t rsa -N "" -f /key_path/filename //generas a ssh key pair
+
+#share public key with remote servers like aws, github
+-> sudo scp -r -i /path_to_key /path/filename_folder ubuntu@ec2_ip_address:./path_to_remote_server/filename 	//will copy a local file to aws ec2 server
+   example: sudo scp ./textfile.txt ubuntu@52.18.17.1:./home/ubunutu/textfile.txt
+
+-> sudo ssh -i /path_to_keyfile/keyname.pem ubuntu@ipaddress	//for connecting to ec2 instance
+
+############################### Github ###################################
+
+#execute below commands only once at the start
+-> git init 		//initializes a repository to git
+-> git config --global user.name "THE_GUY_or_username" 	       //add ur github username
+-> git config --global user.email "THE_GUY@uppercase.com"      //add ur github email address
+-> git remote add origin "url_to_the_github_repository.git"    //to create a remote connection with github, onyl execute this command once at the start
+
+#creating a gitignore file to ignore files/folder which are greater than 150mbs
+-> touch .gitignore	   // creating a .gitignore file
+-> echo "App/node_modules" //could be anything
+
+#execute the below command every time you make a change or need to push changes to github cloud
+-> git add .			//add all(.) files in the current directory to the staging area
+-> git commit -m "any msg" 	//write any commit message
+-> git push origin main		//pushes the staged changes of main branch to remote link, to the github cloud storage
+
+#extra commands
+-> git branch				//displays current branch
+-> git checkout any_branch_main		//shifts to the other branch
+-> git checout -b new_branch		//creats a new branch and dosent shifts to it, it just creats it
+-> git clone "repo_url_to_clone.git"	//downloads a repositoy to your computer, must add .git ad the end of url
+-> git status				//displays current chagnes of the repo
+-> git diff				//displays new and old changes between commited and uncommited files
+-> git rm file_name			//remove files from staging area
+-> git log				//displays all the commits that have recenlty been done
+-> git log --graph			//displays branches graphically
+-> git commit --amend			//after commiting but before pushing, if you forgot to add some files, use "git add ." first, then use this command
+-> git restore --staged	file_name	//undo the "add filename" command
+-> git tag -a tag_name -m "commit_msg"	//adding a tag to a commit
+-> git tag -d tag_name			//removing a tag locally
+-> git push origin --delete tag_name    //removing a tag on github cloud/server
+-> git remote				//displays remote connected urls
+-> git pull origin main			//pull the updated data from origin remote link and branch main to your locall repo
+-> git remote remove origin		//removes the "origin" remote from ur repo
+-> git merge branch_name		// merges the current branch that u r onn, with the "branch_name" u provided
+-> git branch -d branch_name		//deletes a branch, must use git push, for cloud effect
+
+
+############################### CI/CD, Github Actions ###################################
+
+# use this link to validate your yml code
+-> https://rhysd.github.io/actionlint/
+
+# installing node on ubuntu/ec2
+-> https://www.digitalocean.com/community/tutorials/how-to-install-node-js-on-ubuntu-22-04
+
+CI: plan -> code -> build -> test
+CD: release -> deploy -> operate
+
+step1) initalize a git repo
+step2) create a .github/workflows/workflow1.yml   directory and file
+step3) write yml code in it.
+
+-> do the above steps of github
+-> mkdir .github			    	//creates a .github folder
+-> mkdir ./github/workflows			//creates a workflows folder
+-> sudo nano ./github/workflows/workflow1.yml   //creates workflow1.yml files
+
+
+# a repository can have multiple workflows running in parrallel
+# a workflow can have multiple jobs running in parallel
+# a job can have multiple steps running, but in sequence
+
+# in a yml filem spaces are important
+# yaml syntax
+
+Key: value
+Drinks: orange
+Food: "red tomato"	//qutoes added beacause ther is space inbetween the value
+Meals:			//array name "meals", each item of this array should start with "-", minus
+  - pizza		// minus, "-" represents each item
+  - handi		//item-2
+  - burger		//item-3
+  - "vegi soup"		//item-4
+  - drink:		// this is a dictionary inside of a list, the items inside a dictionary doesnt have the minus, "-" sign in it
+      water: 200	//item-1 of dictionary, only seperated by extra 2 spaces
+      love: 100
+      anger: 99
+
+
+# workflow-example-1:
+
+name: First workflow using github actions
+run-name: ${{ github.actor }} has triggered this workflow using $ {{ github.event_name }} on ${{ github.repository }} repo.
+
+on:
+  - push
+  - pull_request
+
+jobs:
+  first_job:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checking out to the repository
+        uses: actions/checkout@v4
+      - name: printing the contents of file
+        run: cat firstfile.txt
+  second-job:
+    runs-on: ubuntu-latest
+    steps:
+      - name: echoing a text
+        run: echo "THE GUY IS HERE TO SAVE THE DAY"
+
+# workflow-example-2:
+name: First workflow using github actions
+run-name: >+
+	${{ github.actor }} has triggered this worflow \
+	using ${{ github.event_name }} event \
+	on branch ${{ github.ref }} of github repository repo.
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+jobs:
+  first-job:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checking out to the repo
+  	uses: actions/checkout@v4
+      - name: printing contents of a random file
+	run: cat randomfile.txt
+  second-jobL
+    runs-on: ubuntu-latest
+    steps:
+      - name: echoing a random file
+	run: echo "THE GUY WAS HERE"
+
+# workflow-example-3:
+name: "first workflow with devops class"
+run-name: "firstworflow, triggered by ${{ github.actor }} with ${{ github.event_name }} event on branch ${{ github.repository }} "
+
+on:
+  push:  
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:	//create a button to manually start a workflow
+
+jobs:
+  firs-job:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checing out ot a repo
+        uses: actions/checkout@v4
+      - name: printing a random file
+        run: cat file.txt
+      - name: executing a script
+        run: bash script.sh
+  second-job:
+    if: github.event_name=='pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: installing phpv7
+        uses: shivammathur/setup-php@v4
+        with:
+          php-version: "7.3"
+      - name: installing node js
+        uses: actions/setup-node@v4
+        with:
+          node-verion: "17"
+      - name: checking the versions of php and nodejs
+        run: |
+         php --version
+         node --version
+
+
+
+
+Working-Workflow-of-Assignment-2:
+#workflow_staging.yml
+name: "pushing the succesfull changes from fix branch to main branch and restarting the server "
+run-name: "the push was started by ${{ github.actor }} by the ${{ github.event_name }} event on ${{ github.repository }} repo."
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  first-job:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checking out
+        uses: actions/checkout@v4
+
+      - name: "restarting the aws staging server with the changes" 
+        uses: JimCronqvist/action-ssh@master
+        with:
+          hosts: 'ubuntu@54.193.22.203'
+          privatekey: ${{secrets.EC2_testing_staging_SERVER_SSH_ACCESS}}
+          command: |
+            export NVM_DIR=/home/ubuntu/.nvm
+            source /home/ubuntu/.nvm/nvm.sh
+            cd /home/ubuntu/CS423-devops-Assignment2/
+            git pull origin main
+            cd App/
+            killall node
+            # npm start
+            forever start index.js
+
+
+      - name: Notify on success
+        run: echo "the staging succeeded"
+        if: success()
+        # uses: dawidd6/action-send-mail@v3
+        # with:
+        #   connection_url: ${{secrets.MAIL_CONNECTION}}
+        #   server_address: smtp.gmail.com
+        #   server_port: 465
+        #   secure: true
+        #   subject: Github Action Sucess
+        #   to: saadan06@gmail.com
+        #   from: saadan06@gmail.com
+        #   body: The Workflow of repo, ${{github.repository}} initiated by ${{github.actor}} was sucessfully executed.
+       
+      - name: Notify on Failure
+        if: failure()
+        run: echo "the staging failed"
+        # uses: dawidd6/action-send-mail@v3
+        # with:
+        #   connection_url: ${{secrets.MAIL_CONNECTION}}
+        #   server_address: smtp.gmail.com
+        #   server_port: 465
+        #   secure: true
+        #   subject: Github Action Failure
+        #   to: saadan06@gmail.com
+        #   from: saadan06@gmail.com
+        #   body: The Workflow of repo ${{github.repository}} initiated by ${{github.actor}} failed, kindly check the workflow logs!
+
+
+
+#workflow_testing.yml
+name: "testing the latest pull request for validation"
+run-name: "execute by ${{ github.actor }} using ${{ github.event_name }} on ${{ github.repository }} repository"
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:    
+  
+jobs:
+  first-job:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checking out
+        uses: actions/checkout@v4
+
+      - name: Running tests on aws testing server
+        uses: JimCronqvist/action-ssh@master
+        with:
+          hosts: 'ubuntu@54.153.83.198'
+          privatekey: ${{secrets.EC2_testing_staging_SERVER_SSH_ACCESS}}
+          command: |
+            export NVM_DIR=/home/ubuntu/.nvm
+            source /home/ubuntu/.nvm/nvm.sh
+            cd /home/ubuntu/devops/CS423-devops-Assignment2/App/
+            git checkout fix
+            git pull origin fix
+            npm run build-react
+            npm run test-react
+            npx eslint src/App.js index.js
+
+      - name: Notify on success
+        if: success()
+        run: echo "successfulyy passed all the tests"
+        # uses: dawidd6/action-send-mail@v3
+        # with:
+        #   connection_url: ${{secrets.MAIL_CONNECTION}}
+        #   server_address: smtp.gmail.com
+        #   server_port: 465
+        #   secure: true
+        #   subject: Github Action Sucess
+        #   to: saadan06@gmail.com
+        #   from: saadan06@gmail.com
+        #   body: The Workflow of repo, ${{github.repository}} initiated by ${{github.actor}} was sucessfully executed.
+       
+      - name: Notify on Failure
+        if: failure()
+        run: echo "the test failed"
+        # uses: dawidd6/action-send-mail@v3
+        # with:
+        #   connection_url: ${{secrets.MAIL_CONNECTION}}
+        #   server_address: smtp.gmail.com
+        #   server_port: 465
+        #   secure: true
+        #   subject: Github Action Failure
+        #   to: saadan06@gmail.com
+        #   from: saadan06@gmail.com
+        #   body: The Workflow of repo ${{github.repository}} initiated by ${{github.actor}} failed, kindly check the workflow logs!
+
+
+
+############################### Assignment-2 ###################################
+
+#workflow_staging.yml
+
+name: "pushing the succesfull changes from fix branch to main branch and restarting the server "
+run-name: "the push was started by ${{ github.actor }} by the ${{ github.event_name }} event on ${{ github.repository }} repo."
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  first-job:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checking out
+        uses: actions/checkout@v4
+
+      - name: "restarting the aws staging server with the changes" 
+        uses: JimCronqvist/action-ssh@master
+        with:
+          hosts: 'ubuntu@54.193.18.253'
+          privatekey: ${{secrets.EC2_testing_staging_SERVER_SSH_ACCESS}}
+          command: |
+            export NVM_DIR=/home/ubuntu/.nvm
+            source /home/ubuntu/.nvm/nvm.sh
+            cd /home/ubuntu/devops/CS423-devops-Assignment2/
+            git pull origin main
+            cd App/
+            killall node
+            # npm start
+            forever start index.js
+
+
+      - name: Notify on success
+        run: echo "the staging succeeded"
+        if: success()
+        # uses: dawidd6/action-send-mail@v3
+        # with:
+        #   connection_url: ${{secrets.MAIL_CONNECTION}}
+        #   server_address: smtp.gmail.com
+        #   server_port: 465
+        #   secure: true
+        #   subject: Github Action Sucess
+        #   to: saadan06@gmail.com
+        #   from: saadan06@gmail.com
+        #   body: The Workflow of repo, ${{github.repository}} initiated by ${{github.actor}} was sucessfully executed.
+       
+      - name: Notify on Failure
+        if: failure()
+        run: echo "the staging failed"
+        # uses: dawidd6/action-send-mail@v3
+        # with:
+        #   connection_url: ${{secrets.MAIL_CONNECTION}}
+        #   server_address: smtp.gmail.com
+        #   server_port: 465
+        #   secure: true
+        #   subject: Github Action Failure
+        #   to: saadan06@gmail.com
+        #   from: saadan06@gmail.com
+        #   body: The Workflow of repo ${{github.repository}} initiated by ${{github.actor}} failed, kindly check the workflow logs!
+
+
+# workflow_testing.yml
+
+name: "testing the latest pull request for validation"
+run-name: "execute by ${{ github.actor }} using ${{ github.event_name }} on ${{ github.repository }} repository"
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:    
+  
+jobs:
+  first-job:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checking out
+        uses: actions/checkout@v4
+
+      - name: Running tests on aws testing server
+        uses: JimCronqvist/action-ssh@master
+        with:
+          hosts: 'ubuntu@54.177.199.104'
+          privatekey: ${{secrets.EC2_testing_staging_SERVER_SSH_ACCESS}}
+          command: |
+            export NVM_DIR=/home/ubuntu/.nvm
+            source /home/ubuntu/.nvm/nvm.sh
+            cd /home/ubuntu/devops/CS423-devops-Assignment2/App/
+            git checkout fix
+            git pull origin fix
+            npm run build-react
+            npm run test-react
+            npx eslint src/App.js index.js
+
+      - name: Notify on success
+        if: success()
+        run: echo "successfulyy passed all the tests"
+        # uses: dawidd6/action-send-mail@v3
+        # with:
+        #   connection_url: ${{secrets.MAIL_CONNECTION}}
+        #   server_address: smtp.gmail.com
+        #   server_port: 465
+        #   secure: true
+        #   subject: Github Action Sucess
+        #   to: saadan06@gmail.com
+        #   from: saadan06@gmail.com
+        #   body: The Workflow of repo, ${{github.repository}} initiated by ${{github.actor}} was sucessfully executed.
+       
+      - name: Notify on Failure
+        if: failure()
+        run: echo "the test failed"
+        # uses: dawidd6/action-send-mail@v3
+        # with:
+        #   connection_url: ${{secrets.MAIL_CONNECTION}}
+        #   server_address: smtp.gmail.com
+        #   server_port: 465
+        #   secure: true
+        #   subject: Github Action Failure
+        #   to: saadan06@gmail.com
+        #   from: saadan06@gmail.com
+        #   body: The Workflow of repo ${{github.repository}} initiated by ${{github.actor}} failed, kindly check the workflow logs!
+
+
+
+
+############################### Assignment-3 ###################################
+
+#Dockerfile.yml
+
+FROM ubuntu:latest
+
+RUN apt-get update -y
+RUN apt-get install -y ca-certificates curl gnupg
+RUN mkdir -p /etc/apt/keyrings
+RUN mkdir -p /etc/apt/keyrings
+RUN curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
+RUN echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_16.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list
+RUN apt-get update -y 
+RUN apt-get install nodejs -y
+
+RUN mkdir ./web
+
+COPY ./App ./web
+
+WORKDIR ./web
+
+RUN npm install
+
+EXPOSE 3000
+
+ENTRYPOINT ["npm"]
+
+CMD ["run", "start"]
+
+-> sudo docker build -t web_app:latest .			//creating image
+-> sudo docker run -p 3000:3000 -d --name frontend web_image	//creating frontend container
+-> sudo docker run -p 2000:3000 -d --name backend web_image	//creating backend container
+
+
+#docker-compose.yml
+
+version: '3'
+services:
+  frontend:
+    container_name: frontend
+    image: web_image:web_app_tag
+    ports:
+      - "8080:3000"
+    volumes:
+      - ./App:/web
+
+  backend:
+    container_name: backend
+    image: web_image:web_app_tag
+    ports:
+      - "443:3000"
+    volumes:
+      - ./App:/web
+
+-> docker-compose up -d						//creating container from compse file, maynot always work, use the above 2 commands
+
+# workflow_staging.yml
+
+name: "pushing the succesfull changes from fix branch to main branch and restarting the server "
+run-name: "the push was started by ${{ github.actor }} by the ${{ github.event_name }} event on ${{ github.repository }} repo."
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  first-job:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checking out
+        uses: actions/checkout@v4
+
+      - name: "restarting the aws staging server with the changes" 
+        uses: JimCronqvist/action-ssh@master
+        with:
+          hosts: 'ubuntu@54.153.118.46'
+          privatekey: ${{secrets.EC2_ASS3_testing_staging_SERVER_SSH_ACCESS}}
+          command: |
+            export NVM_DIR=/home/ubuntu/.nvm
+            source /home/ubuntu/.nvm/nvm.sh
+            cd /home/ubuntu/CS423-devops-Assignment3/
+            git pull origin main
+            sudo docker stop frontend
+            sudo docker stop backend
+            sudo docker rm frontend
+            sudo docker rm backend
+            sudo docker rmi web_image
+            sudo docker build -t web_image:latest .
+            sudo docker run -p 3000:3000 -d --name frontend web_image
+            sudo docker run -p 2000:3000 -d --name backend web_image
+            
+
+      - name: Notify on success
+        run: echo "the staging succeeded"
+        if: success()
+        # uses: dawidd6/action-send-mail@v3
+        # with:
+        #   connection_url: ${{secrets.MAIL_CONNECTION}}
+        #   server_address: smtp.gmail.com
+        #   server_port: 465
+        #   secure: true
+        #   subject: Github Action Sucess
+        #   to: saadan06@gmail.com
+        #   from: saadan06@gmail.com
+        #   body: The Workflow of repo, ${{github.repository}} initiated by ${{github.actor}} was sucessfully executed.
+       
+      - name: Notify on Failure
+        if: failure()
+        run: echo "the staging failed"
+        # uses: dawidd6/action-send-mail@v3
+        # with:
+        #   connection_url: ${{secrets.MAIL_CONNECTION}}
+        #   server_address: smtp.gmail.com
+        #   server_port: 465
+        #   secure: true
+        #   subject: Github Action Failure
+        #   to: saadan06@gmail.com
+        #   from: saadan06@gmail.com
+        #   body: The Workflow of repo ${{github.repository}} initiated by ${{github.actor}} failed, kindly check the workflow logs!
+
+
+
+
+
+# workflow_testing.yml
+
+name: "testing the latest pull request for validation"
+run-name: "execute by ${{ github.actor }} using ${{ github.event_name }} on ${{ github.repository }} repository"
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:    
+  
+jobs:
+  first-job:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checking out
+        uses: actions/checkout@v4
+
+      - name: Running tests on aws testing server
+        uses: JimCronqvist/action-ssh@master
+        with:
+          hosts: 'ubuntu@54.151.91.29'
+          privatekey: ${{secrets.EC2_ASS3_testing_staging_SERVER_SSH_ACCESS}}
+          command: |
+            export NVM_DIR=/home/ubuntu/.nvm
+            source /home/ubuntu/.nvm/nvm.sh
+            cd /home/ubuntu/CS423-devops-Assignment3/
+            git checkout fix
+            git pull origin fix
+            cd App/
+            npm run build-react
+            npm run test-react
+            npx eslint src/App.js index.js
+
+      - name: Notify on success
+        if: success()
+        run: echo "successfulyy passed all the tests"
+        # uses: dawidd6/action-send-mail@v3
+        # with:
+        #   connection_url: ${{secrets.MAIL_CONNECTION}}
+        #   server_address: smtp.gmail.com
+        #   server_port: 465
+        #   secure: true
+        #   subject: Github Action Sucess
+        #   to: saadan06@gmail.com
+        #   from: saadan06@gmail.com
+        #   body: The Workflow of repo, ${{github.repository}} initiated by ${{github.actor}} was sucessfully executed.
+       
+      - name: Notify on Failure
+        if: failure()
+        run: echo "the test failed"
+        # uses: dawidd6/action-send-mail@v3
+        # with:
+        #   connection_url: ${{secrets.MAIL_CONNECTION}}
+        #   server_address: smtp.gmail.com
+        #   server_port: 465
+        #   secure: true
+        #   subject: Github Action Failure
+        #   to: saadan06@gmail.com
+        #   from: saadan06@gmail.com
+        #   body: The Workflow of repo ${{github.repository}} initiated by ${{github.actor}} failed, kindly check the workflow logs!
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

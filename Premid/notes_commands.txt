@@ -1,0 +1,257 @@
+whereis
+find
+which
+cat
+tac
+head
+tail
+ln -s sourcefile symboliclink // creates shortcut for a file
+rm -r
+rm -d
+
+
+chown new_owner:new_group filename //changes ownership
+chmod 777 -R filename//recursively changes permission for aall files in directory
+
+whoami //check current user
+useradd newuser // creates a new user
+useradd -m -d /home/username username // -m creates user home directory, -d changes user home directory
+userdel -r username //deletes user with its home directory if it exists
+
+groupadd mygroup // creates a group
+groupdel mygroup // deletes a group
+
+usermod -a -G sudo username // adds an existing user "username" to group sudo
+
+id -u username //outputs the current user id
+
+grep username /etc/passwd //check for a username in the passwd file to verify if the user is created or not
+
+############### SSH #####################################3
+ssh username@public_ip //normally used to ssh
+ssh -p 22 username@public // p is for selecting a specific port
+ssh -i "/address/of/key" -p 23 username@publicip // use a specific key on port 22 to connec to the ip
+
+example: sudo ssh -i devops_ec2_key.pem ubuntu@54.166.249.185   
+
+sudo ufw allow 22 //opens port 22 in firewall
+
+//creating a config file to easily connect to servers
+cd /home/user/.ssh
+touch config //it will store all the servers ips and keys and user names
+
+//adding a server in config
+// or you can also write them in /etc/ssh/ssh_config file aswell
+nano config
+
+Host bilal_laptop 	#alias or server name
+	Hostname 	#bilal laptops ip, server ips 
+	Port 22
+	User root	#username on the server, bilal
+
+Host ec2_dev                                   
+	HostName 54.166.249.185 
+	user ubuntu
+	IdentityFile /etc/ssh/devops_ec2_key.pem 
+
+ctrl+s ctrl+x
+
+ssh ec2_dev
+
+//creating ssh key in single line
+sudo ssh-keygen -t rsa -b 2048 -f /etc/ssh/ssh_keys/my_laptop_lucifer_key -N "" //-N accepts passphrase, here it is null
+
+sudo scp -i "key/file" /path/to/sources/file username@ipaddress:/destiniation/path //used for copying files to server
+example: sudo scp -v -i devops_ec2_key.pem  ubuntu_laptop_key.pub ubuntu@54.166.249.185:lucifer_laptop_key
+
+
+//sshd_config file contains the configuration for the the incoming connections
+
+################################ Github
+
+mkdir gittestingfolder		//created a test direcotory
+cd gittestingfolder/		//changed into it
+git status			//status check, branch master, no commits, no files tracked
+git bracnh -M main 		//changes/renames master branch to main branch 	
+git status			//branch master changed to main.
+sudo  echo "test-1" >> file1 	//created a test file and wrote test-1 into it
+git status			//untracked file, in red color. meaning files is create with changes which is untracked
+git add file1			//tracked file, meaning staged file1, green in color	
+git status			//green color status is tracked
+echo "testing1 to testing2 " >> file1	//changed file1, file is again untracked. because it is modified
+git status				// red in color, untrack stage
+git add .			//track file1 again
+git status			// green in color, stage is tracked
+git rm --cached file1		// removed file from stage.
+git status			// file1 is again untracked
+git add file1			// tracked file1
+git status			//green, in staging area
+
+git config --local core.bare 				//checking config file
+git config --local user.username "theuppercaseguy"	//localy configuring username
+git config --local user.email "saadan06@gmail.com"	//locally configuiring email
+git config --local user.name "Saad Khan"		//same with user name
+git config --list					//it will display globle configuration
+git config --local --list				//this will display local config
+
+sudo git config --global user.username "theuppercaseguy"  	//configuring global usernname
+sudo git config --global user.email    "saadan06@gmail.com"	//config	global email
+sudo git config --global --list					//viewing global list
+
+>>need to add github acces token
+>>>on gitub, go to profile settings >> left bar, last option, devleoper setting >> personell acces tokens >> Tokens(classic) >>generate new token >> copy and paste it in terminal
+
+git remote add origin https://github.com/theuppercaseguy/dev_mid.git		//added remote link and named it origin
+git remote set-url origin https://github.com/theuppercaseguy/dev_mid.git	//same as above
+git push --set-upstream origin main				//pushing to github remote linke, that we just created, and for future it recors that all the updates will be from main branch to remote link
+sudo git push -u origin main					//same as above, shortcut
+git remote -v							//displays fetch and push links
+git status							// no commits
+
+git clone https://github.com/theuppercaseguy/dev_mid.git
+
+//clone github via ssh
+1) create a public-priv key pair
+2) goto github profile settings >> ssh and GPG keys >> new SSH key >> copy paste the public key
+3) ssh-add /etc/ssh/github	//adding your private key to the keychain
+4) git clone git@github.com:theuppercaseguy/dev_mid.git
+
+
+//branch merge
+git checkout -b branch2			//created a new branch, branch2 also shifts to it as well
+git branch				//show all the branches, and tell the current branch you are onn
+git status				//new branch created	
+git push origin branch2			//pushed the branch2 to cloud
+git rm file1				//rm file1 from branch2
+git add .				//stages the file
+git commit -m "file1 removed"		//commit
+git push origin branch2			//pushed files to branch2
+git checkout main			//changed current branch to main
+git branch				//main branch will be in greeen with an asterik
+git checkout branch2			//changed curr branch to branch2
+echo "testing 4" >> file3		//created file3 and wrote testing 4 into it
+git status				// new unstaged file(file3) in red
+git add .				//staged filed3
+git commit -m "created fole3"		//commit
+git push origin branch2			//pushed file3 to origin branch branch2
+git checkout main			//changed branch to  main
+echo "testing 5" >> file4		//extra file created
+git add .				//staged
+git commit -m "created file 4 in main branch" //commited
+git push				//pushed to main branch
+git branch				//checked current branch which should be main
+git merge branch2			//merged branch2 in main branch. (branch2 files went to main branch)
+git push				//pushed changes
+
+############################### cronjob ###########################
+https://crontab.guru
+
+crontab -e 		//edit crontab
+*/1  *     *     *     *    ls -al /etc/ssh >> /home/lucifer/dev_mid/text
+
+crontab -l		//list all the current cronjobs
+sudo crontab -l -u lucifer //every user has seperecte crontab, 
+
+date  "+%y %m %d %H %M %S" // year month day hour minute second
+
+
+###############shell scripting######################################
+
+script 1 to edit the crontba from bash script.
+
+#!/bin/bash
+crontab -l | { cat; echo "1 * * * * ls -al /etc/ssh"; } | crontab -
+
+chmod +x your_bash_script.sh
+
+
+
+
+
+######################## Quiz Solution #########################################
+### question 3; create a sshkey and acces the server and create a file in it
+
+#!/bin/bash
+ssh-keygen -t rsa -f ~/etc/ssh/test_key -N ""
+grep PasswordAuthen* /etc/ssh/sshd_config  
+sudo sed -i 's|PasswordAuthentication yes|PasswordAuthentication no|' /etc/ssh/sshd_co> //replaces a string
+(
+cat <<- EOF
+Host server
+        Hostname 192.168.24.41
+        user ubuntu
+EOF
+) >> /etc/sshd_config
+
+ssh -t server << EOF
+mkdir filecreated.txt
+echo "hello world" >>filecreated.txt
+EOF
+
+
+### Question-1
+#!/bin/bash
+tar -czvf /backup/devopsdir_backup_$(date '+%Y%m%d%H%M%S').tar.gz /devopsdir/
+
+### Question-2
+#!/bin/bash
+dir="/devopsdir"
+file="$dir/devopsfile.txt"
+
+mkdir -p "$dir"
+echo "AoA, hello devops!" > "$file"
+chown -R $USER:$USER "$dir"
+chmod 644 "$file"
+chmod 744 "$dir"
+
+
+### Question-3
+#!/bin/bash
+keypairname="devopsuser_keypair"
+ssh-keygen -N "" -f "$keypairname"
+cp "$keypairname" "/home/devopsuser/"
+mkdir -p "/home/devopsuser/.ssh"
+mv "$keypairname.pub" "/home/devopsuser/.ssh/authorized_keys"
+
+# c. What is the main configuration change made in the script related to SSH authentication?
+grep -q "^[^#]*PasswordAuthentication" /etc/ssh/sshd_config && sed -i "/^[^#]*PasswordAuthentication[[:space:]]yes/c\PasswordAuthentication no" /etc/ssh/sshd_config || echo "PasswordAuthentication no" >> /etc/ssh/sshd_config
+
+# d. What SSH configuration details are set in the user's SSH config file?
+cat << SSH >> /home/$USER/.ssh/config
+Host server
+	Hostname 127.0.0.1
+	IdentityFile $(pwd)/$keypairname
+	port 25
+	user devopsuser
+SSH
+
+
+
+### Question-4
+#!/bin/bash
+echo "Kernel name is: $(uname -s)"
+echo "Kernel release is: $(uname -r)"
+echo "Processor type of the machine is: $(uname -p)"
+echo "Installed operating system is: $(uname -s)"
+
+# c. What is the purpose of the section displaying information about the favorite editor?
+# Answer: It displays information about the location of the "nano" editor.
+whereis nano
+
+
+
+### Question-5
+#!/bin/bash
+filename=u2020123.tar.gz
+tar -czvf "$filename" *.sh
+
+# c. How are the files copied to the server, and what is the destination?
+scp "$filename" u2020123@127.0.0.1:"$filename"
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  
+
+
+
+
+
+
